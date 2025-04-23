@@ -6,9 +6,9 @@ class CsvHelp
 {
     protected static $storagePath;
 
-    public static function init($pluginRoot)
+    public static function init($storageDir)
     {
-        self::$storagePath = $pluginRoot . '/storage/';
+        self::$storagePath = $storageDir;
         if (!file_exists(self::$storagePath)) {
             mkdir(self::$storagePath, 0755, true);
         }
@@ -41,5 +41,25 @@ class CsvHelp
 
         fclose($fileHandle);
         return true;
+    }
+
+    public static function importFromCSV(string $filePath): array
+    {
+        $fileHandle = fopen(self::$storagePath . $filePath, 'r');
+        if (!$fileHandle) {
+            return [];
+        }
+        $data = [];
+        $headers = fgetcsv($fileHandle);
+        while (($row = fgetcsv($fileHandle)) !== false) {
+            $data[] = array_combine($headers, $row);
+        }
+        fclose($fileHandle);
+        return $data;
+    }
+
+    public static function fileExists($filePath): bool
+    {
+        return file_exists(self::$storagePath . $filePath);
     }
 }

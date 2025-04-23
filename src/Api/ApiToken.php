@@ -8,12 +8,12 @@ use Jkdow\SimplyBook\Support\Logger;
 
 class ApiToken
 {
-    protected $pluginRoot = null;
+    protected $storageDir = null;
     protected $token = null;
 
-    public function __construct($pluginRoot)
+    public function __construct($storageDir)
     {
-        $this->pluginRoot = $pluginRoot;
+        $this->storageDir = $storageDir;
         $this->token = $this->getToken();
     }
 
@@ -45,7 +45,7 @@ class ApiToken
      */
     protected function getToken()
     {
-        $files = glob($this->pluginRoot . '/storage/.token-*');
+        $files = glob($this->storageDir . '/.token-*');
         return match (count($files)) {
             1 => $this->checkTokenFile($files),
             default => $this->getNewToken($files),
@@ -81,9 +81,9 @@ class ApiToken
         $loginClient = new JsonRpcClient('https://user-api.simplybook.me' . '/login/');
         try {
             $token = $loginClient->getUserToken(
-                config('api.company'),
-                config('api.login'),
-                config('api.password')
+                smbk_config('api.company'),
+                smbk_config('api.login'),
+                smbk_config('api.password')
             );
         } catch (Exception $e) {
             Logger::error('Failed to get token', [$e->getMessage()]);
@@ -92,7 +92,7 @@ class ApiToken
         $token = $token[0];
         $datetime = (new DateTime())->format('Y-m-d_H-i-s');
         $filename = ".token-{$datetime}";
-        $filepath = "{$this->pluginRoot}/storage/{$filename}";
+        $filepath = "{$this->storageDir}/{$filename}";
         file_put_contents($filepath, $token);
         return $token;
     }

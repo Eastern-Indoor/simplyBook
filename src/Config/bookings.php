@@ -1,5 +1,7 @@
 <?php
 
+use Jkdow\SimplyBook\Support\Config;
+
 return [
-    'partyid' => getenv('PARTY_EVENT_ID') ?: '',
+    'partyid' => Config::setupVal('PARTY_EVENT_ID', ''),
 ];

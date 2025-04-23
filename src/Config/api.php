@@ -1,7 +1,9 @@
 <?php
 
+use Jkdow\SimplyBook\Support\Config;
+
 return [
-    'company' => getenv('SIMPLYBOOK_COMPANY') ?: '',
-    'login' => getenv('SIMPLYBOOK_LOGIN') ?: '',
-    'password' => getenv('SIMPLYBOOK_PASSWORD') ?: '',
+    'company' => Config::setupVal('SIMPLYBOOK_COMPANY', ''),
+    'login' => Config::setupVal('SIMPLYBOOK_LOGIN', ''),
+    'password' => Config::setupVal('SIMPLYBOOK_PASSWORD', ''),
 ];

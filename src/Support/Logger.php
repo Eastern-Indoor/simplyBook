@@ -11,10 +11,12 @@ use Monolog\Level;
 class Logger
 {
     protected static $logger;
+    protected static $storageDir;
 
-    public static function init($pluginRoot)
+    public static function init($storageDir)
     {
         self::$logger = new MonologLogger('simplybook');
+        self::$storageDir = $storageDir;
 
         if (php_sapi_name() === 'cli' || defined('WP_CLI')) {
             $output = "[%datetime%] %channel%.%level_name%: %message% %context%\n";
@@ -29,10 +31,10 @@ class Logger
             $stderrHandler->setFormatter($formatter);
             self::$logger->pushHandler($stderrHandler);
         } else {
-            if (!file_exists($pluginRoot . '/storage/logs')) {
-                mkdir($pluginRoot . '/storage/logs', 0755, true);
+            if (!file_exists($storageDir . '/logs')) {
+                mkdir($storageDir . '/logs', 0755, true);
             }
-            $logFile = $pluginRoot . '/storage/logs/plugin.log';
+            $logFile = $storageDir . '/logs/plugin.log';
             self::$logger->pushHandler(new StreamHandler($logFile, Level::Debug));
             self::$logger->pushHandler(new ErrorLogHandler(ErrorLogHandler::OPERATING_SYSTEM, Level::Warning));
         }
@@ -71,5 +73,14 @@ class Logger
     {
         $obj_str = json_encode($object, JSON_PRETTY_PRINT);
         self::log('debug', $message, [$obj_str]);
+    }
+
+    public static function clear()
+    {
+        // delete log file
+        $logFile = self::$storageDir . '/logs/plugin.log';
+        if (file_exists($logFile)) {
+            unlink($logFile);
+        }
     }
 }

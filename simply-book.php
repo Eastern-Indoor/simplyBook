@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Name: SimplyBook.me Integration
  * Plugin URI: https://yourwebsite.com
@@ -11,8 +12,11 @@
  * Text Domain: simply-book
  */
 
-if (!defined('ABSPATH')) {
-    //exit; // Prevent direct access
+// Initialize Plugin
+use Jkdow\SimplyBook\SimplyBook;
+
+if (!defined('ABSPATH') || !is_admin()) {
+    exit; // Prevent direct access
 }
 
 // Load Composer Autoloader
@@ -20,19 +24,33 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     require_once __DIR__ . '/vendor/autoload.php';
 }
 
-$pluginRoot = dirname(__FILE__);
+class SmbkRoot {
+    protected static $file;
+    protected static $dir;
 
-// Setup Config
-use Jkdow\SimplyBook\Support\Config;
+    public static function init() {
+        self::$file = __FILE__;
+        self::$dir = __DIR__;
+    }
 
-if (!function_exists('config')) {
-    function config($key, $default = null) {
-        return Config::get($key, $default);
+    public static function getDir() {
+        return self::$dir;
+    }
+
+    public static function getFile() {
+        return self::$file;
     }
 }
 
-// Initialize Plugin
-use Jkdow\SimplyBook\SimplyBook;
+if (!function_exists('smbk_root_dir')) {
+    SmbkRoot::init();
+    function smbk_root_dir($path = '') {
+        return SmbkRoot::getDir() . $path;
+    }
 
-SimplyBook::init($pluginRoot);
-SimplyBook::runTest();
+    function smbk_root_file() {
+        return SmbkRoot::getFile();
+    }
+}
+
+SimplyBook::init();

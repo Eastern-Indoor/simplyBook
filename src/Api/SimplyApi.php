@@ -10,14 +10,14 @@ class SimplyApi
 {
     protected static $client;
 
-    public static function init($pluginRoot)
+    public static function init($storageDir)
     {
-        $token = new ApiToken($pluginRoot);
+        $token = new ApiToken($storageDir);
         Logger::info('Using token', [$token]);
-        Logger::info('Using company', [config('api.company')]);
+        Logger::info('Using company', [smbk_config('api.company')]);
         self::$client = new JsonRpcClient('https://user-api.simplybook.me' . '/admin/', array(
             'headers' => array(
-                'X-Company-Login: ' . config('api.company'),
+                'X-Company-Login: ' . smbk_config('api.company'),
                 'X-User-Token: ' . $token->token(),
             )
         ));
@@ -47,7 +47,7 @@ class SimplyApi
         $filters = [
             'created_date_from' => date('Y-m-01'),
             'created_date_to' => date('Y-m-t'),
-            'event_id' => config('bookings.partyid'),
+            'event_id' => smbk_config('bookings.partyid'),
             'is_confirmed' => 1,
         ];
         $response = self::$client->getBookings($filters);
@@ -62,7 +62,7 @@ class SimplyApi
         $filters = [
             'date_from' => $start,
             'date_to' => $end,
-            'event_id' => config('bookings.partyid'),
+            'event_id' => smbk_config('bookings.partyid'),
             'is_confirmed' => 1,
         ];
         $response = self::$client->getBookings($filters);
