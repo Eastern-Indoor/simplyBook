@@ -4,8 +4,6 @@ namespace Jkdow\SimplyBook;
 
 use Jkdow\SimplyBook\Support\Config;
 use Jkdow\SimplyBook\Support\Logger;
-use Jkdow\SimplyBook\Api\SimplyApi;
-use Jkdow\SimplyBook\Support\CsvHelp;
 use Jkdow\SimplyBook\Controllers\AdminController;
 
 class SimplyBook
@@ -34,9 +32,8 @@ class SimplyBook
     public static function setup()
     {
         Logger::init(self::$storageDir);
-        Logger::clear();
         Config::init();
-        //SimplyApi::init(self::$storageDir);
-        CsvHelp::init(self::$storageDir);
+        Parties::init();
+        Email::init();
     }
 }

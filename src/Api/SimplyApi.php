@@ -10,11 +10,9 @@ class SimplyApi
 {
     protected static $client;
 
-    public static function init($storageDir)
+    public static function init()
     {
-        $token = new ApiToken($storageDir);
-        Logger::info('Using token', [$token]);
-        Logger::info('Using company', [smbk_config('api.company')]);
+        $token = new ApiToken();
         self::$client = new JsonRpcClient('https://user-api.simplybook.me' . '/admin/', array(
             'headers' => array(
                 'X-Company-Login: ' . smbk_config('api.company'),
@@ -76,7 +74,8 @@ class SimplyApi
             $data = collect($booking)->only('id', 'start_date', 'record_date', 'client', 'unit', 'client_email');
             $data['child_name'] = $child_name;
             return $data;
+        })->filter(function ($booking) {
+            return !empty($booking['id']) && !empty($booking['client']) && !empty($booking['child_name']) && !empty($booking['client_email']);
         });
     }
-
 }

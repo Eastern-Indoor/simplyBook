@@ -15,7 +15,7 @@ class Config
     public static function init()
     {
         register_activation_hook(smbk_root_file(), [__CLASS__, 'activate']);
-        register_deactivation_hook(smbk_root_file(), [__CLASS__, 'deactivate']);
+        //register_deactivation_hook(smbk_root_file(), [__CLASS__, 'deactivate']);
         self::$isActivation = false;
 
         self::load();
@@ -84,12 +84,15 @@ class Config
             }
             $value = $value[$segment];
         }
-
         return $value['val'] ?? $default;
     }
 
     public static function set($key, $val)
     {
+        // check if key or val is empty
+        if (empty($key) || empty($val)) {
+            return;
+        }
         $keys = explode('.', $key);
         $value = self::$config;
 
@@ -100,8 +103,10 @@ class Config
             $value = $value[$segment];
         }
 
+
         $dbKey = $value['key'];
         self::dbSet($dbKey, $val);
+        self::$config[$keys[0]][$keys[1]]['val'] = $val;
     }
 
     protected static function dbSet($key, $val)

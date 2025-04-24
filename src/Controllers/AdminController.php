@@ -2,8 +2,7 @@
 
 namespace Jkdow\SimplyBook\Controllers;
 
-use Jkdow\SimplyBook\Api\SimplyApi;
-use Jkdow\SimplyBook\Support\CsvHelp;
+use Jkdow\SimplyBook\Support\Config;
 use Jkdow\SimplyBook\Support\Logger;
 
 class AdminController
@@ -12,6 +11,8 @@ class AdminController
     {
         add_action('admin_menu', [self::class, 'setupAdminPage']);
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminAssets']);
+
+        new SearchController();
     }
 
     public static function setupAdminPage()
@@ -38,33 +39,41 @@ class AdminController
     public static function enqueueAdminAssets()
     {
         wp_enqueue_style('simplybook-admin-css', smbk_asset('css/admin.css'));
+        //wp_enqueue_media('simplybook-admin-media', smbk_asset('images/parties.css'));
     }
 
     public static function adminPage()
     {
-        //$parties = self::runData();
+        Logger::clear();
         smbk_render('Dashboard', [
             'a' => 'testing',
+            'login' => smbk_config('api.login'),
             //'parties' => $parties,
         ]);
     }
 
-    private static function runData()
+    public static function settingsPage()
     {
-        $start = '2024-03-23';
-        //$end = '2024-04-28';
-        $end = '2024-03-28';
-        if (CsvHelp::fileExists('parties.csv')) {
-            echo 'File already exists.';
-            $parties = CsvHelp::importFromCSV('parties.csv');
-        } else {
-            $parties = SimplyApi::previousParties($start, $end);
-            if (CsvHelp::exportToCSV($parties->toArray(), 'parties.csv')) {
-                Logger::info("Exported parties");
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['smbk_nonce'])) {
+            if (wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['smbk_nonce'])), 'smbk_save_settings')) {
+                // sanitize and save each field
+                Config::set('api.company',  sanitize_text_field(wp_unslash($_POST['company'])));
+                Config::set('api.login',    sanitize_text_field(wp_unslash($_POST['login'])));
+                Config::set('api.password', sanitize_text_field(wp_unslash($_POST['password'])));
+                Config::set('bookings.partyid', sanitize_text_field(wp_unslash($_POST['partyid'])));
+
+                smbk_flash('Settings saved successfully.', 'success');
             } else {
-                Logger::error('Failed to export parties');
+                smbk_flash('Security check failed, your settings were not saved.', 'error');
             }
         }
-        return $parties;
+
+        smbk_render('Settings', [
+            'company' => smbk_config('api.company'),
+            'login' => smbk_config('api.login'),
+            'password' => smbk_config('api.password'),
+            'partyid' => smbk_config('bookings.partyid'),
+        ]);
     }
+
 }

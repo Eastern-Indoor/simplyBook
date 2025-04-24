@@ -79,8 +79,9 @@ class Logger
     {
         // delete log file
         $logFile = self::$storageDir . '/logs/plugin.log';
-        if (file_exists($logFile)) {
-            unlink($logFile);
+        if (file_exists($logFile) && $fp = fopen($logFile, 'r+')) {
+            ftruncate($fp, 0);
+            fclose($fp);
         }
     }
 }

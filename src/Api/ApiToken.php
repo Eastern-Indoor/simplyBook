@@ -4,6 +4,7 @@ namespace Jkdow\SimplyBook\Api;
 
 use DateTime;
 use Exception;
+use Jkdow\SimplyBook\Support\Config;
 use Jkdow\SimplyBook\Support\Logger;
 
 class ApiToken
@@ -11,9 +12,8 @@ class ApiToken
     protected $storageDir = null;
     protected $token = null;
 
-    public function __construct($storageDir)
+    public function __construct()
     {
-        $this->storageDir = $storageDir;
         $this->token = $this->getToken();
     }
 
@@ -28,7 +28,7 @@ class ApiToken
     }
 
     /**
-    * Force refresh of the token.
+     * Force refresh of the token.
      *
      * @return string
      */
@@ -45,73 +45,62 @@ class ApiToken
      */
     protected function getToken()
     {
-        $files = glob($this->storageDir . '/.token-*');
-        return match (count($files)) {
-            1 => $this->checkTokenFile($files),
-            default => $this->getNewToken($files),
-        };
-    }
-
-    /**
-     * Deletes the token files.
-     *
-     * @param array $files
-     */
-    protected function deleteTokens($files)
-    {
-        foreach ($files as $file) {
-            if (file_exists($file)) {
-                unlink($file);
-            }
+        $token = smbk_config('token.token');
+        $timestamp = smbk_config('token.timestamp');
+        if ($token == '') {
+            return $this->getNewToken();
+        } else {
+            return $this->checkToken($token, $timestamp);
         }
     }
 
     /**
-     * Creates a new token file.
+     * Creates a new token.
      *
      * @param array $files
      * @return string
      * @throws Exception
      */
-    protected function getNewToken($files = [])
+    protected function getNewToken()
     {
         // Clear the old token files
-        $this->deleteTokens($files);
-        Logger::info("Getting new token");
+        //Logger::info("Getting new token");
         $loginClient = new JsonRpcClient('https://user-api.simplybook.me' . '/login/');
+        $compant = smbk_config('api.company');
+        $login = smbk_config('api.login');
+        $password = smbk_config('api.password');
+        if (empty($compant) || empty($login) || empty($password)) {
+            smbk_flash('Please set your API credentials in the settings', 'error');
+            return;
+        }
         try {
-            $token = $loginClient->getUserToken(
-                smbk_config('api.company'),
-                smbk_config('api.login'),
-                smbk_config('api.password')
-            );
+            $token = $loginClient->getUserToken($compant, $login, $password);
         } catch (Exception $e) {
-            Logger::error('Failed to get token', [$e->getMessage()]);
-            throw new Exception('Failed to get token');
+            smbk_flash('Error getting token: ' . $e->getMessage(), 'error');
+            return;
         }
         $token = $token[0];
         $datetime = (new DateTime())->format('Y-m-d_H-i-s');
-        $filename = ".token-{$datetime}";
-        $filepath = "{$this->storageDir}/{$filename}";
-        file_put_contents($filepath, $token);
+        Config::set('token.token', $token);
+        Config::set('token.timestamp', $datetime);
         return $token;
     }
 
-    protected function checkTokenFile($files)
+    protected function checkToken($token, $timestamp)
     {
-        $file = $files[0];
-        $filename = basename($file);
-        $timestamp = str_replace('.token-', '', $filename);
+        if (empty($timestamp)) {
+            return $this->getNewToken();
+        }
         $timestamp = DateTime::createFromFormat('Y-m-d_H-i-s', $timestamp);
         Logger::info("Token file timestamp", [$timestamp]);
         $datetime = new DateTime();
         $datetime->modify('-1 hour');
         if ($timestamp > $datetime) {
             Logger::info("Using existing token");
-            return file_get_contents($file);
+            return $token;
         } else {
             Logger::info("Token expired, getting new token");
-            return $this->getNewToken($files);
+            return $this->getNewToken();
         }
     }
 }
