@@ -18,8 +18,7 @@ class SimplyBook
             wp_mkdir_p(self::$storageDir);
         }
         self::loadHelperFuncions();
-        self::setup();
-        new AdminController();
+        add_action('plugins_loaded', [__CLASS__, 'setup']);
     }
 
     public static function loadHelperFuncions()
@@ -31,9 +30,12 @@ class SimplyBook
 
     public static function setup()
     {
+        // Supports and Models
         Logger::init(self::$storageDir);
         Config::init();
         Parties::init();
         Email::init();
+        // Controllers
+        AdminController::setup();
     }
 }

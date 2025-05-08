@@ -2,15 +2,17 @@
 
 namespace Jkdow\SimplyBook\Api;
 
+use Jkdow\SimplyBook\Support\Logger;
+
 /**
  * JSON-RPC CLient class
  */
 class JsonRpcClient
 {
 
-    protected $_requestId = 1;
-    protected $_contextOptions;
-    protected $_url;
+    protected $requestId = 1;
+    protected $headers;
+    protected $url;
 
     /**
      * Constructor. Takes the connection parameters
@@ -19,18 +21,13 @@ class JsonRpcClient
      */
     public function __construct($url, $options = array())
     {
-        $headers = array('Content-type: application/json');
-        if (isset($options['headers'])) {
-            $headers = array_merge($headers, $options['headers']);
-        }
-        $this->_contextOptions = array(
-            'http' => array(
-                'method' => 'POST',
-                'header' => implode("\r\n", $headers) . "\r\n"
-            )
-        );
+        $this->url = $url;
 
-        $this->_url = $url;
+        // WP likes headers as an associative array
+        $default = ['Content-Type' => 'application/json; charset=utf-8'];
+        $this->headers = isset($options['headers'])
+            ? array_merge($default, $options['headers'])
+            : $default;
     }
 
     /**
@@ -42,24 +39,45 @@ class JsonRpcClient
      */
     public function __call($method, $params)
     {
-        $currentId = $this->_requestId++;
+        //Logger::debug('JSON-RPC call', [$method, $params]);
+        $currentId = $this->requestId++;
         $request = array(
             'method' => $method,
             'params' => array_values($params),
-            'id'     => $currentId
+            'id' => $currentId,
+            "jsonrpc" => "2.0"
         );
-        $request = json_encode($request);
+        $request = wp_json_encode($request);
+        //Logger::debug('JSON-RPC request', [$request]);
 
-        $this->_contextOptions['http']['content'] = $request;
-
-        $response = file_get_contents($this->_url, false, stream_context_create($this->_contextOptions));
-        $result = json_decode($response, true);
-
-        if ($result['id'] != $currentId) {
-            throw new \Exception("Incorrect response id (request id: {$currentId}, response id: {$result['id']})" . "\n\nResponse: " . $response);
+        $response = wp_remote_post($this->url, [
+            'headers'     => $this->headers,
+            'body'        => $request,
+            'timeout'     => 15,
+            'data_format' => 'body',
+        ]);
+        if (is_wp_error($response)) {
+            Logger::error("HTTP request failed: " . $response->get_error_message());
+            return null;
         }
-        if (isset($result['error']) && $result['error']) {
-            throw new \Exception("Request error: {$result['error']['message']}");
+        $code = wp_remote_retrieve_response_code($response);
+        if (200 !== (int) $code) {
+            Logger::error("Unexpected HTTP code: {$code}\nURL: {$this->url}\nPayload: {$request}");
+            return null;
+        }
+        $raw = wp_remote_retrieve_body($response);
+        $result = json_decode($raw, true);
+        //Logger::debug("Response", [$result]);
+        if (null === $result) {
+            Logger::error("Invalid JSON response:\n{$raw}");
+            return null;
+        } else if (! isset($result['id']) || (int)$result['id'] !== $currentId) {
+            Logger::error("Mismatched response ID (req: {$currentId}, resp: " . ($result['id'] ?? 'none') . ")\n{$raw}");
+            return null;
+        } else if (! empty($result['error'])) {
+            $msg = $result['error']['message'] ?? 'Unknown JSON-RPC error';
+            Logger::error("JSON-RPC error: {$msg}\n{$raw}");
+            return null;
         }
 
         return collect($result['result']);

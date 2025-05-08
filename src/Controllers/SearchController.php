@@ -5,16 +5,10 @@ namespace Jkdow\SimplyBook\Controllers;
 use Jkdow\SimplyBook\Api\SimplyApi;
 use Jkdow\SimplyBook\Email;
 use Jkdow\SimplyBook\Parties;
-use Jkdow\SimplyBook\Support\Logger;
 
 class SearchController
 {
-    public function __construct()
-    {
-        add_action('admin_menu', [self::class, 'setupAdminPage']);
-    }
-
-    public static function setupAdminPage()
+    public static function setupPage()
     {
         add_submenu_page(
             'simplybook',
@@ -55,7 +49,7 @@ class SearchController
         $raw_start = $_GET['start'] ?? $stored_start  ?? null;
         $raw_end   = $_GET['end']   ?? $stored_end    ?? null;
 
-        Logger::info('raw_start' . $raw_start . ', raw_end' . $raw_end);
+        //Logger::info('raw_start' . $raw_start . ', raw_end' . $raw_end);
 
         if ($raw_start && $raw_end) {
             // 3) Sanitize & validate YYYY-MM-DD format
@@ -66,10 +60,7 @@ class SearchController
             $end   = preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw_end)
                 ? $raw_end
                 : date('Y-m-t');
-            Logger::info('Sanitized', [
-                'start' => $start,
-                'end'   => $end,
-            ]);
+            //Logger::info('Sanitized', [ 'start' => $start, 'end'   => $end, ]);
 
             // 4) If this was a fresh submit (i.e. via GET), store it for next time
             if (isset($_GET['start'], $_GET['end'])) {

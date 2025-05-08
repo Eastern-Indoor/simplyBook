@@ -13,11 +13,13 @@ use Jkdow\SimplyBook\Email;
 
     <!-- Filter Form -->
     <form method="get" style="margin-bottom:1em;">
-        <input type="hidden" name="page" value="simplybook-data" />
-        <p class="description"><?php esc_html_e(
-                                    'Please note that updating the dates can take a while and the page will refresh automatically.',
-                                    'smbk'
-                                ); ?></p>
+        <input type="hidden" name="page" value="simplybook-search" />
+        <p class="description">
+            <?php esc_html_e(
+                'Please note that updating the dates can take a while and the page will refresh automatically.',
+                'smbk'
+            ); ?>
+        </p>
         <table class="form-table">
             <tr>
                 <th><label for="smbk_start"><?php esc_html_e('Start Date', 'smbk'); ?></label></th>

@@ -46,7 +46,7 @@ class ApiToken
     protected function getToken()
     {
         $token = smbk_config('token.token');
-        $timestamp = smbk_config('token.timestamp');
+        $timestamp = smbk_config('token.time');
         if ($token == '') {
             return $this->getNewToken();
         } else {
@@ -66,15 +66,15 @@ class ApiToken
         // Clear the old token files
         //Logger::info("Getting new token");
         $loginClient = new JsonRpcClient('https://user-api.simplybook.me' . '/login/');
-        $compant = smbk_config('api.company');
+        $company = smbk_config('api.company');
         $login = smbk_config('api.login');
         $password = smbk_config('api.password');
-        if (empty($compant) || empty($login) || empty($password)) {
+        if (empty($company) || empty($login) || empty($password)) {
             smbk_flash('Please set your API credentials in the settings', 'error');
             return;
         }
         try {
-            $token = $loginClient->getUserToken($compant, $login, $password);
+            $token = $loginClient->getUserToken($company, $login, $password);
         } catch (Exception $e) {
             smbk_flash('Error getting token: ' . $e->getMessage(), 'error');
             return;
@@ -82,7 +82,7 @@ class ApiToken
         $token = $token[0];
         $datetime = (new DateTime())->format('Y-m-d_H-i-s');
         Config::set('token.token', $token);
-        Config::set('token.timestamp', $datetime);
+        Config::set('token.time', $datetime);
         return $token;
     }
 

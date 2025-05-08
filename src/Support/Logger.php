@@ -84,4 +84,56 @@ class Logger
             fclose($fp);
         }
     }
+
+    public static function getLogs(int $limit = 200): array
+    {
+        if (!self::$storageDir) {
+            throw new \Exception('Logger not initialized: missing storageDir');
+        }
+        $logFile = self::$storageDir . '/logs/plugin.log';
+        if (!file_exists($logFile)) {
+            return [];
+        }
+        $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($limit > 0 && count($lines) > $limit) {
+            $lines = array_slice($lines, -$limit);
+        }
+
+        $entries = [];
+        foreach ($lines as $line) {
+            $entries[] = self::processLogLine($line);
+        }
+        return $entries;
+    }
+
+    protected static function processLogLine($line)
+    {
+        // Example line: [2025-04-24T04:23:07.665396+00:00] simplybook.INFO: Message here {"key":"value"}
+        if (preg_match('/^\[(.+?)\]\s+(\S+)\.(\w+):\s+(.*)$/', $line, $m)) {
+            list(, $datetime, $channel, $level, $rest) = $m;
+            // Split context if JSON-like at end
+            $context = '';
+            $message = $rest;
+            if (preg_match('/^(.*)\s+(\{.*\})$/', $rest, $m2)) {
+                $message = $m2[1];
+                $context = $m2[2];
+            }
+            return [
+                'datetime' => $datetime,
+                'channel'  => $channel,
+                'level'    => strtoupper($level),
+                'message'  => $message,
+                'context'  => $context,
+            ];
+        } else {
+            // fallback raw
+            return [
+                'datetime' => '',
+                'channel'  => '',
+                'level'    => 'DEBUG',
+                'message'  => $line,
+                'context'  => '',
+            ];
+        }
+    }
 }

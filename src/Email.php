@@ -64,8 +64,7 @@ class Email
     public static function buildEmail(array $party): array
     {
         // sanitize inputs
-        //$to        = sanitize_email($party['client_email']);
-        $to = 'jk.dowling22@gmail.com';
+        $to = sanitize_email($party['client_email']);
         $full_name = sanitize_text_field($party['client']);
         $parts = explode(' ', $full_name);
         $first_name = $parts[0] ?? $full_name;
@@ -114,7 +113,7 @@ class Email
               <li><strong>Pickleball:</strong> Learn to play the coolest game in town on a smaller court with lots of hitting, game play, running & fun!</li>
             </ul>
 
-            <p>To speak to us & make a booking send us an email at <a href="mailto:info@slidesplaycentre.com.au">info@slidesplaycentre.com.au</a> or call on (03) 9763 5589</p>
+            <p>To speak to us & make a booking send us an email at <a href="mailto:info@easternindoor.com.au">info@easternindoor.com.au</a> or call on (03) 9763 5589</p>
 
             <br>
 
@@ -177,5 +176,28 @@ class Email
     {
         return get_transient(self::PREVIEW_TRANSIENT) ?: null;
     }
-}
 
+    public static function emailCount()
+    {
+        global $wpdb;
+        return [
+            'today' => (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}smbk_emails WHERE DATE(sent_at)=CURDATE()"),
+            'week'  => (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}smbk_emails WHERE sent_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)"),
+            'all'   => (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}smbk_emails")
+        ];
+    }
+
+    public static function recentEmails()
+    {
+        global $wpdb;
+        $etable = $wpdb->prefix . self::TABLE;
+        $ptable = $wpdb->prefix . Parties::TABLE_PARTIES;
+        return $wpdb->get_results("
+            SELECT e.id, e.party_id, e.sent_at, p.client_email
+            FROM {$etable} AS e
+            LEFT JOIN {$ptable} AS p ON p.id = e.party_id
+            ORDER BY e.sent_at DESC
+            LIMIT 5
+        ", ARRAY_A);
+    }
+}

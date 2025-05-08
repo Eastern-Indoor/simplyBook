@@ -13,12 +13,15 @@ class SimplyApi
     public static function init()
     {
         $token = new ApiToken();
-        self::$client = new JsonRpcClient('https://user-api.simplybook.me' . '/admin/', array(
-            'headers' => array(
-                'X-Company-Login: ' . smbk_config('api.company'),
-                'X-User-Token: ' . $token->token(),
-            )
-        ));
+        self::$client = new JsonRpcClient(
+            'https://user-api.simplybook.me/admin',
+            [
+                'headers' => [
+                    'X-Company-Login' => smbk_config('api.company'),
+                    'X-User-Token' => $token->token(),
+                ]
+            ]
+        );
     }
 
     public static function getEventList()
@@ -64,6 +67,9 @@ class SimplyApi
             'is_confirmed' => 1,
         ];
         $response = self::$client->getBookings($filters);
+        if ($response === null) {
+            return null;
+        }
         $totalBookings = $response->count();
         Logger::debug('Got response', [$totalBookings]);
         return $response->map(function ($booking, $index) use ($totalBookings) {

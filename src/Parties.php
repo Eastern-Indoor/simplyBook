@@ -86,10 +86,10 @@ class Parties
         );
 
         $intervals = array_map(fn($r) => [$r['date_start'], $r['date_end']], $rows);
-        Logger::info('Loaded intervals', [$intervals]);
+        //Logger::info('Loaded intervals', [$intervals]);
         $merged    = self::mergeIntervals($intervals);
         $missing = self::computeMissing($start, $end, $merged);
-        Logger::info('Missing intervals', [$missing]);
+        Logger::info('Missing dates not in DB', [$missing]);
 
         foreach ($missing as [$ms, $me]) {
             self::uncheckedQuery($ms, $me);
@@ -118,6 +118,9 @@ class Parties
     protected static function uncheckedQuery($start, $end)
     {
         $parties = SimplyApi::previousParties($start, $end);
+        if ($parties === null) {
+            return;
+        }
         Logger::info('Got parties in date range', [$start, $end, $parties->count()]);
         // Create new query entry
         global $wpdb;
@@ -129,7 +132,7 @@ class Parties
             ]
         );
         $queryId = $wpdb->insert_id;
-        Logger::info('Inserted new query', [$queryId]);
+        //Logger::info('Inserted new query', [$queryId]);
         $ptable  = $wpdb->prefix . self::TABLE_PARTIES;
 
         // Insert each party into the parties table
@@ -143,7 +146,7 @@ class Parties
             ));
 
             if ($exists) {
-                Logger::info("Skipping duplicate booking", [$booking_id]);
+                //Logger::info("Skipping duplicate booking", [$booking_id]);
                 continue;
             }
 
@@ -247,5 +250,28 @@ class Parties
         }
 
         return $missing;
+    }
+
+    public static function totalParties()
+    {
+        global $wpdb;
+        $ptable = $wpdb->prefix . self::TABLE_PARTIES;
+        return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$ptable}");
+    }
+
+    public static function getQueries() {
+        /** @var wpdb $wpdb */
+        global $wpdb;
+
+        // Adjust to match your actual table name
+        $table_name = $wpdb->prefix . self::TABLE_QUERIES;
+
+        // Fetch up to 200 most recent queries
+        return $wpdb->get_results("
+            SELECT id, date_start, date_end, queried_at
+            FROM {$table_name}
+            ORDER BY queried_at DESC
+            LIMIT 200
+        ", ARRAY_A);
     }
 }
